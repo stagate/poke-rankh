@@ -1,0 +1,1572 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>포켓몬 배틀 랭킹 검색기 (싱글/더블)</title>
+  <style>
+    :root {
+      --bg-main: #f4f6fb;
+      --bg-card: #ffffff;
+      --bg-subtle: #edf1f9;
+      --text-primary: #191f28;
+      --text-secondary: #4e5968;
+      --text-muted: #8b95a1;
+      --border-color: #dde3ee;
+      --accent-single: #2563eb;
+      --accent-single-soft: #dbeafe;
+      --accent-double: #7c3aed;
+      --accent-double-soft: #ede9fe;
+      --danger: #e11d48;
+      --danger-soft: #ffe4e6;
+      --warning: #d97706;
+      --warning-soft: #fef3c7;
+      --success: #059669;
+      --success-soft: #d1fae5;
+      --shadow-sm: 0 2px 6px rgba(15, 23, 42, 0.05);
+      --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.08);
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --active-accent: var(--accent-single);
+      --active-accent-soft: var(--accent-single-soft);
+    }
+
+    [data-mode="double"] {
+      --active-accent: var(--accent-double);
+      --active-accent-soft: var(--accent-double-soft);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Malgun Gothic", sans-serif;
+      background-color: var(--bg-main);
+      color: var(--text-primary);
+      line-height: 1.5;
+      min-height: 100vh;
+      padding-bottom: 60px;
+    }
+
+    /* 상단 헤더 및 예시 데이터 안내 배너 */
+    .notice-banner {
+      background-color: #1e293b;
+      color: #f8fafc;
+      font-size: 0.85rem;
+      padding: 10px 16px;
+      text-align: center;
+      border-bottom: 1px solid #334155;
+    }
+
+    .notice-banner strong {
+      color: #38bdf8;
+      font-weight: 700;
+    }
+
+    .container {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 24px 16px;
+    }
+
+    header.app-header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .brand-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .pokeball-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 3px solid var(--text-primary);
+      background: linear-gradient(to bottom, #ef4444 0%, #ef4444 45%, #191f28 45%, #191f28 55%, #ffffff 55%, #ffffff 100%);
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .pokeball-icon::after {
+      content: "";
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      background: #ffffff;
+      border: 3px solid var(--text-primary);
+      border-radius: 50%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .brand-title h1 {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-subtitle {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+
+    /* 배틀 형식 전환 탭 */
+    .mode-switch-wrapper {
+      background: var(--bg-card);
+      padding: 5px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-color);
+      display: inline-flex;
+      gap: 4px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .mode-btn {
+      border: none;
+      background: transparent;
+      padding: 10px 20px;
+      border-radius: var(--radius-sm);
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .mode-btn:hover {
+      color: var(--text-primary);
+      background: var(--bg-subtle);
+    }
+
+    .mode-btn.active {
+      background: var(--active-accent);
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+    }
+
+    /* 검색 컨트롤 패널 */
+    .search-panel {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      border: 1px solid var(--border-color);
+      box-shadow: var(--shadow-md);
+      margin-bottom: 24px;
+    }
+
+    .search-panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .current-mode-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--active-accent-soft);
+      color: var(--active-accent);
+      font-weight: 700;
+      font-size: 0.85rem;
+      padding: 4px 12px;
+      border-radius: 999px;
+    }
+
+    .data-range-info {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    .search-input-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .search-input {
+      flex: 1;
+      padding: 14px 16px;
+      font-size: 1rem;
+      border: 2px solid var(--border-color);
+      border-radius: var(--radius-md);
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .search-input:focus {
+      border-color: var(--active-accent);
+      box-shadow: 0 0 0 3px var(--active-accent-soft);
+    }
+
+    .btn {
+      border: none;
+      border-radius: var(--radius-md);
+      padding: 12px 20px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: var(--active-accent);
+      color: #ffffff;
+    }
+
+    .btn-primary:hover {
+      filter: brightness(0.92);
+    }
+
+    .btn-secondary {
+      background: var(--bg-subtle);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+    }
+
+    .btn-secondary:hover {
+      background: #e2e8f0;
+    }
+
+    .btn-danger-outline {
+      background: transparent;
+      color: var(--danger);
+      border: 1px solid #fecdd3;
+    }
+
+    .btn-danger-outline:hover {
+      background: var(--danger-soft);
+    }
+
+    /* 빠른 테스트 및 안내 툴바 */
+    .helper-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding-top: 12px;
+      border-top: 1px dashed var(--border-color);
+    }
+
+    .quick-presets {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .quick-presets span {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      margin-right: 4px;
+    }
+
+    .chip-btn {
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .chip-btn:hover {
+      border-color: var(--active-accent);
+      color: var(--active-accent);
+      background: var(--active-accent-soft);
+    }
+
+    /* 상태 피드백 알림창 */
+    .feedback-box {
+      display: none;
+      margin-top: 16px;
+      padding: 14px 16px;
+      border-radius: var(--radius-md);
+      font-size: 0.9rem;
+      border-left: 4px solid transparent;
+    }
+
+    .feedback-box.show {
+      display: block;
+    }
+
+    .feedback-box.success {
+      background: var(--success-soft);
+      color: #065f46;
+      border-left-color: var(--success);
+    }
+
+    .feedback-box.warning {
+      background: var(--warning-soft);
+      color: #92400e;
+      border-left-color: var(--warning);
+    }
+
+    .feedback-box.error {
+      background: var(--danger-soft);
+      color: #9f1239;
+      border-left-color: var(--danger);
+    }
+
+    .feedback-title {
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .feedback-list {
+      margin-left: 18px;
+      font-size: 0.85rem;
+    }
+
+    /* 결과 영역 헤더 */
+    .results-section {
+      margin-bottom: 32px;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .section-title {
+      font-size: 1.2rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .party-counter {
+      font-size: 0.85rem;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      font-weight: 700;
+    }
+
+    .party-counter.full {
+      background: var(--active-accent-soft);
+      color: var(--active-accent);
+      border-color: var(--active-accent);
+    }
+
+    /* 6마리 엔트리 그리드 */
+    .pokemon-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .pokemon-card {
+      background: var(--bg-card);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-color);
+      padding: 18px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+      position: relative;
+    }
+
+    .pokemon-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+      border-color: #cbd5e1;
+    }
+
+    .pokemon-card.focused {
+      border: 2px solid var(--active-accent);
+      box-shadow: 0 0 0 4px var(--active-accent-soft);
+    }
+
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .rank-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.9rem;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-subtle);
+      color: var(--text-primary);
+    }
+
+    .rank-badge.rank-1 {
+      background: #fef08a;
+      color: #854d0e;
+      border: 1px solid #fde047;
+    }
+
+    .rank-badge.rank-2 {
+      background: #e2e8f0;
+      color: #334155;
+      border: 1px solid #cbd5e1;
+    }
+
+    .rank-badge.rank-3 {
+      background: #fed7aa;
+      color: #9a3412;
+      border: 1px solid #fdba74;
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .icon-btn {
+      border: 1px solid var(--border-color);
+      background: var(--bg-card);
+      color: var(--text-secondary);
+      border-radius: var(--radius-sm);
+      padding: 4px 8px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .icon-btn:hover {
+      background: var(--bg-subtle);
+      color: var(--text-primary);
+    }
+
+    .icon-btn.delete-btn:hover {
+      background: var(--danger-soft);
+      color: var(--danger);
+      border-color: #fda4af;
+    }
+
+    .pokemon-name-wrap {
+      margin-bottom: 12px;
+    }
+
+    .dex-number {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .pokemon-name {
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: var(--text-primary);
+      margin-top: 2px;
+    }
+
+    .type-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    .type-badge {
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 6px;
+      color: #ffffff;
+    }
+
+    /* 포켓몬 18개 타입별 배경색 */
+    .type-노말 { background: #949495; }
+    .type-불꽃 { background: #e56c3e; }
+    .type-물 { background: #5185c5; }
+    .type-풀 { background: #66a945; }
+    .type-전기 { background: #eab308; }
+    .type-얼음 { background: #6dc8eb; color: #0f172a; }
+    .type-격투 { background: #e09c40; }
+    .type-독 { background: #735198; }
+    .type-땅 { background: #9c7743; }
+    .type-비행 { background: #a2c3e7; color: #0f172a; }
+    .type-에스퍼 { background: #dd6b7b; }
+    .type-벌레 { background: #9fa244; }
+    .type-바위 { background: #bfb889; color: #0f172a; }
+    .type-고스트 { background: #684870; }
+    .type-드래곤 { background: #535ca8; }
+    .type-악 { background: #4c4948; }
+    .type-강철 { background: #69a9c7; }
+    .type-페어리 { background: #dab4d4; color: #0f172a; }
+
+    /* 개별 카드 상세 확인 영역 */
+    .card-detail {
+      background: var(--bg-subtle);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      border-top: 1px solid var(--border-color);
+      display: none;
+    }
+
+    .card-detail.open {
+      display: block;
+    }
+
+    .card-detail-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+
+    .card-detail-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .card-detail-label {
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    /* 빈 상태 안내 박스 */
+    .empty-state {
+      background: var(--bg-card);
+      border: 2px dashed var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 40px 20px;
+      text-align: center;
+      color: var(--text-secondary);
+    }
+
+    .empty-state h3 {
+      font-size: 1.05rem;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+    }
+
+    .empty-state p {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+
+    /* 하단 참고용 전체 랭킹표 & 데이터 교체 섹션 */
+    .reference-section {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+
+    details.panel-Accordion {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+
+    details.panel-Accordion summary {
+      padding: 16px 20px;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--bg-card);
+    }
+
+    details.panel-Accordion summary:hover {
+      background: var(--bg-subtle);
+    }
+
+    .accordion-body {
+      padding: 20px;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .table-wrapper {
+      overflow-x: auto;
+      max-height: 360px;
+      overflow-y: auto;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+    }
+
+    table.ranking-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      text-align: left;
+    }
+
+    table.ranking-table th,
+    table.ranking-table td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    table.ranking-table th {
+      background: var(--bg-subtle);
+      position: sticky;
+      top: 0;
+      font-weight: 700;
+      z-index: 1;
+    }
+
+    table.ranking-table tr:hover td {
+      background: #f8fafc;
+    }
+
+    .json-editor {
+      width: 100%;
+      min-height: 220px;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 0.82rem;
+      padding: 12px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      background: #0f172a;
+      color: #e2e8f0;
+      margin: 12px 0;
+      resize: vertical;
+    }
+
+    /* 반응형 레이아웃 */
+    @media (max-width: 900px) {
+      .pokemon-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 640px) {
+      header.app-header {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .mode-switch-wrapper {
+        width: 100%;
+      }
+
+      .mode-btn {
+        flex: 1;
+        text-align: center;
+      }
+
+      .search-input-group {
+        flex-direction: column;
+      }
+
+      .search-input-group .btn {
+        width: 100%;
+      }
+
+      .pokemon-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body data-mode="single">
+  <!-- 예시 데이터 안내 상단 고지 배너 -->
+  <div class="notice-banner" role="note">
+    <strong>[데이터 안내]</strong> 본 웹페이지에 기본 탑재된 순위는 공식 실시간 API가 아닌 <strong>오프라인 구동용 예시 데이터(싱글·더블 각 1~30위)</strong>입니다. 하단 [데이터 교체 및 관리]에서 실제 데이터로 즉시 변경할 수 있습니다.
+  </div>
+
+  <div class="container">
+    <!-- 상단 헤더 & 배틀 형식 전환 -->
+    <header class="app-header">
+      <div class="brand-title">
+        <div class="pokeball-icon" aria-hidden="true"></div>
+        <div>
+          <h1>포켓몬 배틀 랭킹 검색기</h1>
+          <p class="brand-subtitle">랭킹 번호로 최대 6마리까지 포켓몬 엔트리를 조회·관리하세요</p>
+        </div>
+      </div>
+
+      <div class="mode-switch-wrapper" role="tablist" aria-label="배틀 형식 선택">
+        <button
+          type="button"
+          id="btn-mode-single"
+          class="mode-btn active"
+          role="tab"
+          aria-selected="true"
+          data-battle-mode="single"
+        >
+          ⚔️ 싱글배틀 랭킹
+        </button>
+        <button
+          type="button"
+          id="btn-mode-double"
+          class="mode-btn"
+          role="tab"
+          aria-selected="false"
+          data-battle-mode="double"
+        >
+          🛡️ 더블배틀 랭킹
+        </button>
+      </div>
+    </header>
+
+    <!-- 검색 입력 패널 -->
+    <section class="search-panel" aria-label="랭킹 번호 검색">
+      <div class="search-panel-header">
+        <span id="current-mode-badge" class="current-mode-badge">현재 모드: 싱글배틀 랭킹 (예시 데이터)</span>
+        <span id="data-range-info" class="data-range-info">검색 가능 번호: 1위 ~ 30위 (최대 6마리)</span>
+      </div>
+
+      <form id="search-form" novalidate>
+        <div class="search-input-group">
+          <input
+            type="text"
+            id="rank-input"
+            class="search-input"
+            placeholder="랭킹 번호 입력 (예: 1, 3, 5 또는 2 4 6 — 최대 6마리)"
+            autocomplete="off"
+            aria-label="포켓몬 랭킹 번호 입력"
+          />
+          <button type="submit" id="btn-search" class="btn btn-primary">
+            검색 (새로 조회)
+          </button>
+          <button type="button" id="btn-append" class="btn btn-secondary" title="현재 결과 목록을 유지한 채 입력한 번호를 추가합니다">
+            + 결과에 추가
+          </button>
+          <button type="button" id="btn-reset" class="btn btn-danger-outline">
+            초기화
+          </button>
+        </div>
+      </form>
+
+      <div class="helper-bar">
+        <div class="quick-presets">
+          <span>빠른 테스트 입력:</span>
+          <button type="button" class="chip-btn" data-preset="1, 2, 3, 4, 5, 6">Top 6 (1~6위)</button>
+          <button type="button" class="chip-btn" data-preset="1 4 7 10 15">공백 구분 (1 4 7 10 15)</button>
+          <button type="button" class="chip-btn" data-preset="1, 1, 3, 0, 99, abc">오류·중복 복합 테스트</button>
+          <button type="button" class="chip-btn" data-preset="1, 2, 3, 4, 5, 6, 7, 8">6마리 초과 테스트</button>
+        </div>
+      </div>
+
+      <!-- 입력 검증 및 오류/안내 메시지 표시 영역 -->
+      <div id="feedback-box" class="feedback-box" role="alert" aria-live="polite"></div>
+    </section>
+
+    <!-- 검색 결과 (최대 6마리 개별 확인 및 삭제) -->
+    <section class="results-section" aria-label="검색 결과 목록">
+      <div class="section-header">
+        <div class="section-title">
+          <span>검색된 포켓몬 엔트리</span>
+          <span id="party-counter" class="party-counter">0 / 6마리</span>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button type="button" id="btn-toggle-all-details" class="btn btn-secondary" style="padding: 8px 14px; font-size: 0.84rem;" hidden>
+            상세정보 모두 펼치기
+          </button>
+        </div>
+      </div>
+
+      <div id="results-container">
+        <div class="empty-state">
+          <h3>아직 검색된 포켓몬이 없습니다</h3>
+          <p>위 검색창에 랭킹 번호(예: <code>1, 2, 3</code> 또는 <code>1 5 10</code>)를 입력하거나 아래 전체 랭킹표에서 선택해 보세요.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 하단 참고용 전체 랭킹표 & 실제 데이터 교체 도구 -->
+    <section class="reference-section">
+      <!-- 1. 전체 랭킹 참조표 -->
+      <details class="panel-Accordion" open>
+        <summary>
+          <span>📋 현재 적용된 전체 랭킹표 확인 및 개별 선택 (예시 데이터)</span>
+          <span style="font-size: 0.82rem; color: var(--text-muted);">클릭하여 접기/펼치기</span>
+        </summary>
+        <div class="accordion-body">
+          <p style="font-size: 0.86rem; color: var(--text-secondary); margin-bottom: 12px;">
+            아래 표는 현재 선택된 배틀 형식의 전체 순위 데이터입니다. 우측 버튼으로 검색 결과(최대 6마리)에 바로 추가하거나 제거할 수 있습니다.
+          </p>
+          <div class="table-wrapper">
+            <table class="ranking-table">
+              <thead>
+                <tr>
+                  <th style="width: 80px;">순위</th>
+                  <th style="width: 110px;">전국도감</th>
+                  <th>포켓몬 이름</th>
+                  <th>타입</th>
+                  <th>주요 특징 (예시)</th>
+                  <th style="width: 110px; text-align: center;">엔트리 관리</th>
+                </tr>
+              </thead>
+              <tbody id="reference-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </details>
+
+      <!-- 2. 실제 데이터로 교체하는 도구 및 가이드 -->
+      <details class="panel-Accordion">
+        <summary>
+          <span>⚙️ 실제 랭킹 데이터로 교체하기 (JSON 라이브 편집기 및 코드 수정 안내)</span>
+          <span style="font-size: 0.82rem; color: var(--text-muted);">클릭하여 접기/펼치기</span>
+        </summary>
+        <div class="accordion-body">
+          <p style="font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 8px;">
+            <strong>방법 1 (영구 반영):</strong> <code>index.html</code> 파일 내부 스크립트 상단의 <code>DEFAULT_RANKING_DATA</code> 배열을 시즌 실제 데이터로 수정하세요.<br />
+            <strong>방법 2 (브라우저 즉시 반영):</strong> 아래 JSON 편집기에서 데이터를 수정한 뒤 <strong>[커스텀 데이터 적용]</strong>을 누르면 브라우저(LocalStorage)에 즉시 저장되어 작동합니다.
+          </p>
+          <textarea id="json-editor" class="json-editor" spellcheck="false" aria-label="랭킹 JSON 데이터 편집기"></textarea>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button type="button" id="btn-apply-json" class="btn btn-primary" style="padding: 10px 16px; font-size: 0.88rem;">
+              커스텀 데이터 적용
+            </button>
+            <button type="button" id="btn-restore-default" class="btn btn-secondary" style="padding: 10px 16px; font-size: 0.88rem;">
+              기본 예시 데이터로 복원
+            </button>
+          </div>
+        </div>
+      </details>
+    </section>
+  </div>
+
+  <script>
+    /**
+     * ============================================================================
+     * [안내] 기본 탑재된 포켓몬 배틀 랭킹 예시 데이터 (싱글 30마리 / 더블 30마리)
+     * - 실제 포켓몬스터 스칼렛·바이올렛 공식 한국어 명칭, 전국도감 번호, 실제 타입만 사용했습니다.
+     * - 실시간 공식 서버 API가 제공되지 않는 환경을 고려한 예시 순위 데이터이며,
+     *   실제 시즌 데이터로 교체하려면 아래 DEFAULT_RANKING_DATA 객체를 수정하거나
+     *   화면 하단의 '실제 랭킹 데이터로 교체하기' JSON 편집기를 사용하세요.
+     * ============================================================================
+     */
+    const DEFAULT_RANKING_DATA = {
+      single: [
+        { rank: 1, dex: 149, name: "망나뇽", types: ["드래곤", "비행"], role: "멀티스케일 특성 기반 어태커" },
+        { rank: 2, dex: 987, name: "날개치는머리", types: ["고스트", "페어리"], role: "고속 특수 어태커 및 변화기 견제" },
+        { rank: 3, dex: 1002, name: "파오젠", types: ["악", "얼음"], role: "재앙의검 특성을 활용한 고속 물리 돌파" },
+        { rank: 4, dex: 1003, name: "딩루", types: ["악", "땅"], role: "재앙의그릇 기반 스텔스록·막이" },
+        { rank: 5, dex: 901, name: "다투곰(붉은달)", types: ["땅", "노말"], role: "심안 특성 및 블러드문 고화력 특수 어태커" },
+        { rank: 6, dex: 1000, name: "타부자고", types: ["강철", "고스트"], role: "황금몸 특성으로 변화기를 무효화하는 올라운더" },
+        { rank: 7, dex: 892, name: "우라오스(연격의 태세)", types: ["격투", "물"], role: "보이지않는주먹과 수류연타 기반 물리 돌파" },
+        { rank: 8, dex: 1017, name: "오거폰(화덕의 가면)", types: ["풀", "불꽃"], role: "틀깨기 특성 및 덩굴방망이 고화력 어태커" },
+        { rank: 9, dex: 1018, name: "브리두라스", types: ["강철", "드래곤"], role: "지구력·옹골참 기반 전개 및 딜탱" },
+        { rank: 10, dex: 645, name: "랜드로스(영물폼)", types: ["땅", "비행"], role: "위협 특성과 유턴을 통한 대면 조작" },
+        { rank: 11, dex: 1004, name: "위유이", types: ["악", "불꽃"], role: "재앙의구슬 특성으로 특수방어를 약화시키는 어태커" },
+        { rank: 12, dex: 991, name: "무쇠보따리", types: ["얼음", "물"], role: "프리즈드라이·앙코르 기반 초고속 통제" },
+        { rank: 13, dex: 1001, name: "총지엔", types: ["악", "풀"], role: "재앙의목간과 씨뿌리기 기반 물리 막이" },
+        { rank: 14, dex: 212, name: "핫삼", types: ["벌레", "강철"], role: "테크니션 불릿펀치와 유턴 중심 피벗" },
+        { rank: 15, dex: 727, name: "어흥염", types: ["불꽃", "악"], role: "위협과 막말내뱉기를 통한 사이클 보조" },
+        { rank: 16, dex: 730, name: "누리레느", types: ["물", "페어리"], role: "퀵턴과 앙코르를 겸비한 특수 딜탱" },
+        { rank: 17, dex: 472, name: "글라이온", types: ["땅", "비행"], role: "포이즌힐 특성을 활용한 상태이상·막이" },
+        { rank: 18, dex: 778, name: "따라큐", types: ["고스트", "페어리"], role: "탈 특성을 활용한 안정적인 대면 처리" },
+        { rank: 19, dex: 902, name: "대쓰여너", types: ["물", "고스트"], role: "성묘 및 적응력 기반 후발 스위퍼" },
+        { rank: 20, dex: 934, name: "콜로솔트", types: ["바위"], role: "정화의소금 특성과 소금절이 도트 대미지 압박" },
+        { rank: 21, dex: 911, name: "라우드본", types: ["불꽃", "고스트"], role: "천진 특성과 플레어송 기반 물리 막이" },
+        { rank: 22, dex: 908, name: "마스카나", types: ["풀", "악"], role: "변환자재 및 트릭플라워 선봉 어태커" },
+        { rank: 23, dex: 812, name: "고릴타", types: ["풀"], role: "그래스메이커와 그래스슬라이더 선공기 운용" },
+        { rank: 24, dex: 233, name: "폴리곤2", types: ["노말"], role: "진화의휘석 기반 고내구 트릭룸·막이" },
+        { rank: 25, dex: 286, name: "키노가사", types: ["풀", "격투"], role: "버섯포자와 기합의띠를 활용한 대면 제압" },
+        { rank: 26, dex: 823, name: "아머까오", types: ["비행", "강철"], role: "미러아머·철벽·날개쉬기 기반 물리 수용" },
+        { rank: 27, dex: 980, name: "토오", types: ["독", "땅"], role: "저수·천진 특성 기반 특수/물리 쿠션" },
+        { rank: 28, dex: 994, name: "무쇠독나방", types: ["불꽃", "독"], role: "부스트에너지 기반 고속 특수 스위퍼" },
+        { rank: 29, dex: 445, name: "한카리아스", types: ["드래곤", "땅"], role: "까칠한피부 및 칼춤·스텔스록 다목적 운용" },
+        { rank: 30, dex: 998, name: "드닐레이브", types: ["드래곤", "얼음"], role: "열교환 특성과 대검돌격 고화력 돌파" }
+      ],
+      double: [
+        { rank: 1, dex: 727, name: "어흥염", types: ["불꽃", "악"], role: "위협·속이다·막말내뱉기 최고의 더블 서포터" },
+        { rank: 2, dex: 987, name: "날개치는머리", types: ["고스트", "페어리"], role: "매지컬샤인 광역 딜링 및 얼다바람 스피드 컨트롤" },
+        { rank: 3, dex: 892, name: "우라오스(연격의 태세)", types: ["격투", "물"], role: "방어(수호)를 무시하는 수류연타 집중 타격" },
+        { rank: 4, dex: 812, name: "고릴타", types: ["풀"], role: "속이다·그래스슬라이더·유턴 필드 장악" },
+        { rank: 5, dex: 1017, name: "오거폰(우물의 가면)", types: ["풀", "물"], role: "날따름 서포트와 덩굴방망이 공격 겸비" },
+        { rank: 6, dex: 986, name: "사나운버섯", types: ["풀", "악"], role: "버섯포자·분노의가루 기반 고내구 서포터" },
+        { rank: 7, dex: 1002, name: "파오젠", types: ["악", "얼음"], role: "아군 물리 어태커의 화력을 증폭시키는 고속 딜러" },
+        { rank: 8, dex: 645, name: "랜드로스(화신폼)", types: ["땅", "비행"], role: "우격다짐 특성 기반 열사의폭풍·대지의힘 어태커" },
+        { rank: 9, dex: 901, name: "다투곰(붉은달)", types: ["땅", "노말"], role: "트릭룸 및 하이퍼보이스 광역 특수 어태커" },
+        { rank: 10, dex: 1000, name: "타부자고", types: ["강철", "고스트"], role: "골드러시 광역 타격 및 변화기 면역 딜러" },
+        { rank: 11, dex: 641, name: "토네로스(화신폼)", types: ["비행"], role: "짓궂은마음 순풍·비바라기 날씨 및 스피드 조작" },
+        { rank: 12, dex: 992, name: "무쇠손", types: ["격투", "전기"], role: "속이다와 드레인펀치 기반 고내구 물리 딜탱" },
+        { rank: 13, dex: 149, name: "망나뇽", types: ["드래곤", "비행"], role: "정신력 특성으로 위협·속이다를 무시하는 신속 딜러" },
+        { rank: 14, dex: 1004, name: "위유이", types: ["악", "불꽃"], role: "열풍·바크아웃 광역 압박 및 특수방어 약화" },
+        { rank: 15, dex: 876, name: "에써르(암컷)", types: ["에스퍼", "노말"], role: "사이코메이커 선공기 차단 및 날따름·트릭룸" },
+        { rank: 16, dex: 1018, name: "브리두라스", types: ["강철", "드래곤"], role: "일렉트로빔과 바디프레스를 활용한 비 파티 핵심" },
+        { rank: 17, dex: 279, name: "펠리퍼", types: ["물", "비행"], role: "잔비 특성 날씨 전개 및 와이드가드·순풍 보조" },
+        { rank: 18, dex: 324, name: "코터스", types: ["불꽃"], role: "가뭄 특성 및 트릭룸 분화 광역 스위퍼" },
+        { rank: 19, dex: 547, name: "엘풍", types: ["풀", "페어리"], role: "짓궂은마음 순풍·앙코르·도우미 서포터" },
+        { rank: 20, dex: 591, name: "뽀록나", types: ["풀", "독"], role: "버섯포자·분노의가루·꽃가루경단 아군 보호" },
+        { rank: 21, dex: 1003, name: "딩루", types: ["악", "땅"], role: "재앙의그릇으로 아군 전체의 특수 내구를 보강" },
+        { rank: 22, dex: 488, name: "크레세리아", types: ["에스퍼"], role: "트릭룸 전개와 초승달기도를 통한 아군 회복" },
+        { rank: 23, dex: 1021, name: "날뛰는우레", types: ["전기", "드래곤"], role: "질풍뢰격 선공기와 명상 기반 특수 딜탱" },
+        { rank: 24, dex: 730, name: "누리레느", types: ["물", "페어리"], role: "촉촉보이스 하이퍼보이스 광역 딜러" },
+        { rank: 25, dex: 981, name: "키키링", types: ["노말", "에스퍼"], role: "아머테일 특성으로 상대 선공기를 원천 차단" },
+        { rank: 26, dex: 991, name: "무쇠보따리", types: ["얼음", "물"], role: "얼다바람 스피드 조작과 하이드로펌프 타점" },
+        { rank: 27, dex: 977, name: "어써러셔", types: ["물"], role: "싸리용과 합체하여 전 능력치를 올리는 사령탑 핵심" },
+        { rank: 28, dex: 978, name: "싸리용", types: ["드래곤", "물"], role: "사령탑 특성으로 어써러셔를 강화하는 파트너" },
+        { rank: 29, dex: 903, name: "포푸니크", types: ["격투", "독"], role: "페어스피드·속이다·페이탈클로 상태이상 압박" },
+        { rank: 30, dex: 233, name: "폴리곤2", types: ["노말"], role: "다운로드 특성과 안정적인 트릭룸 전개" }
+      ]
+    };
+
+    const MAX_PARTY_SIZE = 6;
+    const STORAGE_KEY = "CUSTOM_POKEMON_RANKING_DATA_V1";
+
+    // 애플리케이션 상태 관리
+    const state = {
+      mode: "single",              // 'single' | 'double'
+      selectedRanks: [],           // 현재 화면에 표시 중인 랭킹 번호 배열 (최대 6개)
+      expandedCards: new Set(),    // 상세 정보가 펼쳐진 랭킹 번호 집합
+      focusedRank: null,           // 개별 확인 시 하이라이트된 카드 번호
+      rankingData: loadInitialData()
+    };
+
+    // DOM 요소 참조
+    const els = {
+      body: document.body,
+      btnModeSingle: document.getElementById("btn-mode-single"),
+      btnModeDouble: document.getElementById("btn-mode-double"),
+      currentModeBadge: document.getElementById("current-mode-badge"),
+      dataRangeInfo: document.getElementById("data-range-info"),
+      searchForm: document.getElementById("search-form"),
+      rankInput: document.getElementById("rank-input"),
+      btnSearch: document.getElementById("btn-search"),
+      btnAppend: document.getElementById("btn-append"),
+      btnReset: document.getElementById("btn-reset"),
+      feedbackBox: document.getElementById("feedback-box"),
+      partyCounter: document.getElementById("party-counter"),
+      btnToggleAllDetails: document.getElementById("btn-toggle-all-details"),
+      resultsContainer: document.getElementById("results-container"),
+      referenceTableBody: document.getElementById("reference-table-body"),
+      jsonEditor: document.getElementById("json-editor"),
+      btnApplyJson: document.getElementById("btn-apply-json"),
+      btnRestoreDefault: document.getElementById("btn-restore-default"),
+      presetBtns: document.querySelectorAll(".chip-btn")
+    };
+
+    // 초기 데이터 로드 (LocalStorage에 사용자 데이터가 있으면 우선 로드)
+    function loadInitialData() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (validateDatasetStructure(parsed)) {
+            return parsed;
+          }
+        }
+      } catch (e) {
+        console.warn("저장된 커스텀 데이터를 불러오지 못해 기본 예시 데이터를 사용합니다.", e);
+      }
+      return JSON.parse(JSON.stringify(DEFAULT_RANKING_DATA));
+    }
+
+    // 데이터 구조 유효성 검사
+    function validateDatasetStructure(data) {
+      if (!data || typeof data !== "object") return false;
+      for (const modeKey of ["single", "double"]) {
+        if (!Array.isArray(data[modeKey]) || data[modeKey].length === 0) return false;
+        for (const item of data[modeKey]) {
+          if (
+            typeof item.rank !== "number" ||
+            typeof item.name !== "string" ||
+            !item.name.trim() ||
+            !Array.isArray(item.types)
+          ) {
+            return false;
+          }
+        }
+      }
+      return true;
+    }
+
+    // 현재 선택된 배틀 모드의 데이터 배열 반환
+    function getCurrentModeList() {
+      return state.rankingData[state.mode] || [];
+    }
+
+    // 현재 모드에서 특정 랭킹 번호의 포켓몬 데이터 검색
+    function findPokemonByRank(rankNumber) {
+      const list = getCurrentModeList();
+      return list.find((item) => item.rank === rankNumber) || null;
+    }
+
+    /**
+     * 사용자 입력 문자열 파싱 및 유효성 검사
+     * - 쉼표(,)와 공백(스페이스, 탭 등) 및 혼합 구분자 지원
+     * - 빈 입력, 잘못된 문자/소수/음수, 범위 밖 번호, 중복 번호, 6마리 초과를 정밀 분류
+     */
+    function parseAndValidateInput(rawString, existingRanks = []) {
+      const trimmed = rawString.trim();
+
+      if (!trimmed) {
+        return {
+          isEmpty: true,
+          validNewRanks: [],
+          duplicateInputs: [],
+          alreadyInParty: [],
+          invalidFormatTokens: [],
+          outOfRangeTokens: [],
+          overflowRanks: []
+        };
+      }
+
+      // 쉼표 또는 연속된 공백을 기준으로 분리하되, 빈 토큰 제거
+      const tokens = trimmed.split(/[\s,]+/).filter(Boolean);
+      if (tokens.length === 0) {
+        return {
+          isEmpty: true,
+          validNewRanks: [],
+          duplicateInputs: [],
+          alreadyInParty: [],
+          invalidFormatTokens: [],
+          outOfRangeTokens: [],
+          overflowRanks: []
+        };
+      }
+
+      const currentList = getCurrentModeList();
+      const validRankSet = new Set(currentList.map((p) => p.rank));
+
+      const seenInCurrentInput = new Set();
+      const existingSet = new Set(existingRanks);
+
+      const candidateRanks = [];
+      const duplicateInputs = [];
+      const alreadyInParty = [];
+      const invalidFormatTokens = [];
+      const outOfRangeTokens = [];
+
+      for (const token of tokens) {
+        // 부호 없는 정수 형태인지 엄격 검사 (예: "1", "15" 허용 / "1.5", "-2", "abc", "1위" 거부)
+        if (!/^\d+$/.test(token)) {
+          invalidFormatTokens.push(token);
+          continue;
+        }
+
+        const num = Number(token);
+        if (!Number.isSafeInteger(num) || !validRankSet.has(num)) {
+          outOfRangeTokens.push(token);
+          continue;
+        }
+
+        if (seenInCurrentInput.has(num)) {
+          if (!duplicateInputs.includes(num)) duplicateInputs.push(num);
+          continue;
+        }
+        seenInCurrentInput.add(num);
+
+        if (existingSet.has(num)) {
+          alreadyInParty.push(num);
+          continue;
+        }
+
+        candidateRanks.push(num);
+      }
+
+      const availableSlots = Math.max(0, MAX_PARTY_SIZE - existingRanks.length);
+      const validNewRanks = candidateRanks.slice(0, availableSlots);
+      const overflowRanks = candidateRanks.slice(availableSlots);
+
+      return {
+        isEmpty: false,
+        validNewRanks,
+        duplicateInputs,
+        alreadyInParty,
+        invalidFormatTokens,
+        outOfRangeTokens,
+        overflowRanks
+      };
+    }
+
+    // 검색 실행 (isAppend = false면 새로 덮어쓰기, true면 현재 목록에 추가)
+    function executeSearch(isAppend = false) {
+      const rawInput = els.rankInput.value;
+      const baseRanks = isAppend ? [...state.selectedRanks] : [];
+      const result = parseAndValidateInput(rawInput, baseRanks);
+
+      if (result.isEmpty) {
+        showFeedback("error", "입력된 번호가 없습니다.", [
+          "검색할 포켓몬의 랭킹 번호를 입력해 주세요. (예: 1, 3, 5 또는 2 4 6)"
+        ]);
+        return;
+      }
+
+      const warnings = [];
+      const maxRank = getCurrentModeList().length;
+
+      if (result.invalidFormatTokens.length > 0) {
+        warnings.push(`잘못된 형식 제외: [${result.invalidFormatTokens.join(", ")}] — 숫자(양의 정수)만 입력할 수 있습니다.`);
+      }
+
+      if (result.outOfRangeTokens.length > 0) {
+        warnings.push(`랭킹 범위 초과 제외: [${result.outOfRangeTokens.join(", ")}] — 현재 데이터는 1위부터 ${maxRank}위까지 지원합니다.`);
+      }
+
+      if (result.duplicateInputs.length > 0) {
+        warnings.push(`중복 입력 자동 정리: [${result.duplicateInputs.map((r) => r + "위").join(", ")}] — 중복된 번호는 1회만 반영했습니다.`);
+      }
+
+      if (result.alreadyInParty.length > 0) {
+        warnings.push(`이미 결과에 포함된 번호: [${result.alreadyInParty.map((r) => r + "위").join(", ")}]`);
+      }
+
+      if (result.overflowRanks.length > 0) {
+        warnings.push(
+          `최대 6마리 제한 초과: [${result.overflowRanks.map((r) => r + "위").join(", ")}] — 최대 ${MAX_PARTY_SIZE}마리까지만 검색할 수 있어 초과된 번호는 제외되었습니다.`
+        );
+      }
+
+      // 유효한 번호가 단 하나도 없는 경우
+      if (result.validNewRanks.length === 0) {
+        if (!isAppend && result.alreadyInParty.length === 0) {
+          // 새로 검색했는데 유효한 번호가 전혀 없으면 안내 후 기존 결과 유지 또는 비움
+          state.selectedRanks = [];
+          state.expandedCards.clear();
+          renderAll();
+        }
+        showFeedback("error", "조건에 맞는 포켓몬을 추가할 수 없습니다.", warnings);
+        return;
+      }
+
+      // 상태 업데이트
+      state.selectedRanks = [...baseRanks, ...result.validNewRanks];
+      if (!isAppend) {
+        state.expandedCards.clear();
+      }
+      // 새로 추가된 카드는 기본적으로 상세 정보를 펼쳐서 바로 확인할 수 있게 설정
+      result.validNewRanks.forEach((r) => state.expandedCards.add(r));
+
+      renderAll();
+
+      const modeLabel = state.mode === "single" ? "싱글배틀" : "더블배틀";
+      if (warnings.length > 0) {
+        showFeedback(
+          "warning",
+          `${modeLabel} 랭킹에서 ${result.validNewRanks.length}마리를 불러왔습니다. (일부 입력 제외됨)`,
+          warnings
+        );
+      } else {
+        showFeedback(
+          "success",
+          `${modeLabel} 랭킹 검색 완료 (${state.selectedRanks.map((r) => r + "위").join(", ")})`,
+          []
+        );
+      }
+    }
+
+    // 알림 박스 렌더링
+    function showFeedback(type, title, messages = []) {
+      els.feedbackBox.className = `feedback-box show ${type}`;
+      els.feedbackBox.innerHTML = "";
+
+      const titleEl = document.createElement("div");
+      titleEl.className = "feedback-title";
+      titleEl.textContent = title;
+      els.feedbackBox.appendChild(titleEl);
+
+      if (messages.length > 0) {
+        const ul = document.createElement("ul");
+        ul.className = "feedback-list";
+        messages.forEach((msg) => {
+          const li = document.createElement("li");
+          li.textContent = msg;
+          ul.appendChild(li);
+        });
+        els.feedbackBox.appendChild(ul);
+      }
+    }
+
+    function hideFeedback() {
+      els.feedbackBox.className = "feedback-box";
+      els.feedbackBox.innerHTML = "";
+    }
+
+    // 배틀 형식 전환 (싱글 <-> 더블)
+    function switchBattleMode(targetMode) {
+      if (targetMode !== "single" && targetMode !== "double") return;
+      if (state.mode === targetMode) return;
+
+      state.mode = targetMode;
+      els.body.setAttribute("data-mode", targetMode);
+
+      const isSingle = targetMode === "single";
+      els.btnModeSingle.classList.toggle("active", isSingle);
+      els.btnModeSingle.setAttribute("aria-selected", String(isSingle));
+      els.btnModeDouble.classList.toggle("active", !isSingle);
+      els.btnModeDouble.setAttribute("aria-selected", String(!isSingle));
+
+      // 전환된 모드 데이터 범위에 맞지 않는 번호가 있으면 필터링
+      const validSet = new Set(getCurrentModeList().map((p) => p.rank));
+      state.selectedRanks = state.selectedRanks.filter((r) => validSet.has(r));
+
+      renderAll();
+
+      const modeName = isSingle ? "싱글배틀" : "더블배틀";
+      if (state.selectedRanks.length > 0) {
+        showFeedback(
+          "success",
+          `${modeName} 랭킹으로 전환되었습니다.`,
+          [`현재 선택된 순위(${state.selectedRanks.map((r) => r + "위").join(", ")})의 포켓몬이 ${modeName} 기준으로 즉시 갱신되었습니다.`]
+        );
+      } else {
+        hideFeedback();
+      }
+    }
+
+    // 개별 포켓몬 삭제
+    function removeRankFromParty(rankNumber) {
+      const targetPokemon = findPokemonByRank(rankNumber);
+      state.selectedRanks = state.selectedRanks.filter((r) => r !== rankNumber);
+      state.expandedCards.delete(rankNumber);
+      if (state.focusedRank === rankNumber) {
+        state.focusedRank = null;
+      }
+      renderAll();
+
+      const pokeName = targetPokemon ? `${rankNumber}위 ${targetPokemon.name}` : `${rankNumber}위`;
+      showFeedback("warning", `${pokeName} 포켓몬을 검색 결과에서 삭제했습니다.`, []);
+    }
+
+    // 개별 포켓몬 상세정보 토글 및 포커스 확인
+    function toggleCardDetail(rankNumber) {
+      if (state.expandedCards.has(rankNumber)) {
+        state.expandedCards.delete(rankNumber);
+      } else {
+        state.expandedCards.add(rankNumber);
+      }
+      state.focusedRank = rankNumber;
+      renderResults();
+    }
+
+    // 전체 초기화
+    function resetAll() {
+      els.rankInput.value = "";
+      state.selectedRanks = [];
+      state.expandedCards.clear();
+      state.focusedRank = null;
+      hideFeedback();
+      renderAll();
+      els.rankInput.focus();
+    }
+
+    // 상단 배지 및 범위 텍스트 업데이트
+    function renderHeaderMeta() {
+      const modeName = state.mode === "single" ? "싱글배틀 랭킹" : "더블배틀 랭킹";
+      const list = getCurrentModeList();
+      els.currentModeBadge.textContent = `현재 모드: ${modeName} (예시 데이터)`;
+      els.dataRangeInfo.textContent = `검색 가능 번호: 1위 ~ ${list.length}위 (최대 ${MAX_PARTY_SIZE}마리)`;
+    }
+
+    // 검색 결과 카드 렌더링
+    function renderResults() {
+      const count = state.selectedRanks.length;
+      els.partyCounter.textContent = `${count} / ${MAX_PARTY_SIZE}마리`;
+      els.partyCounter.classList.toggle("full", count >= MAX_PARTY_SIZE);
+
+      if (count === 0) {
+        els.btnToggleAllDetails.hidden = true;
+        els.resultsContainer.innerHTML = `
+          <div class="empty-state">
+            <h3>아직 검색된 포켓몬이 없습니다</h3>
+            <p>위 검색창에 랭킹 번호(예: <code>1, 2, 3</code> 또는 <code>1 5 10</code>)를 입력하거나 아래 전체 랭킹표에서 선택해 보세요.</p>
+          </div>
+        `;
+        return;
+      }
+
+      els.btnToggleAllDetails.hidden = false;
+      const allExpanded = state.selectedRanks.every((r) => state.expandedCards.has(r));
+      els.btnToggleAllDetails.textContent = allExpanded ? "상세정보 모두 접기" : "상세정보 모두 펼치기";
+
+      const grid = document.createElement("div");
+      grid.className = "pokemon-grid";
+
+      state.selectedRanks.forEach((rankNum) => {
+        const poke = findPokemonByRank(rankNum);
+        if (!poke) return;
+
+        const isExpanded = state.expandedCards.has(rankNum);
+        const isFocused = state.focusedRank === rankNum;
+
+        const card = document.createElement("article");
+        card.className = `pokemon-card${isFocused ? " focused" : ""}`;
+        card.setAttribute("data-rank", String(rankNum));
+
+        // 상단 순위 배지 및 개별 확인/삭제 버튼
+        const cardTop = document.createElement("div");
+        cardTop.className = "card-top";
+
+        const rankBadge = document.createElement("span");
+        const medalClass = rankNum <= 3 ? ` rank-${rankNum}` : "";
+        rankBadge.className = `rank-badge${medalClass}`;
+        rankBadge.textContent = `${rankNum}위`;
+
+        const actions = document.createElement("div");
+        actions.className = "card-actions";
+
+        const detailBtn = document.createElement("button");
+        detailBtn.type = "button";
+        detailBtn.className = "icon-btn";
+        detailBtn.textContent = isExpanded ? "상세 접기" : "개별 상세";
+        detailBtn.addEventListener("click", () => toggleCardDetail(rankNum));
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.type = "button";
+        deleteBtn.className = "icon-btn delete-btn";
+        deleteBtn.setAttribute("aria-label", `${poke.name} 삭제`);
+        deleteBtn.textContent = "삭제 ✕";
+        deleteBtn.addEventListener("click", () => removeRankFromParty(rankNum));
+
+        actions.appendChild(detailBtn);
+        actions.appendChild(deleteBtn);
+        cardTop.appendChild(rankBadge);
+        cardTop.appendChild(actions);
+
+        // 포켓몬 도감번호 및 이름
+        const nameWrap = document.createElement("div");
+        nameWrap.className = "pokemon-name-wrap";
+
+        const dexEl = document.createElement("div");
+        dexEl.className = "dex-number";
+        const formattedDex = poke.dex ? `전국도감 No.${String(poke.dex).padStart(4, "0")}` : "전국도감 정보 없음";
+        dexEl.textContent = formattedDex;
+
+        const nameEl = document.createElement("h3");
+        nameEl.className = "pokemon-name";
+        nameEl.textContent = poke.name;
+
+        nameWrap.appendChild(dexEl);
+        nameWrap.appendChild(nameEl);
+
+        // 타입 배지 목록
+        const typeList = document.createElement("div");
+        typeList.className = "type-list";
+        (poke.types || []).forEach((t) => {
+          const badge = document.createElement("span");
+          badge.className = `type-badge type-${t}`;
+          badge.textContent = t;
+          typeList.appendChild(badge);
+        });
+
+        // 개별 확인 상세 영역
+        const detailBox = document.createElement("div");
+        detailBox.className = `card-detail${isExpanded ? " open" : ""}`;
+
+        const modeRow = document.createElement("div");
+        modeRow.className = "card-detail-row";
+        modeRow.innerHTML = `<span class="card-detail-label">배틀 부문</span><span>${state.mode === "single" ? "싱글배틀" : "더블배틀"} (예시)</span>`;
+
+        const roleRow = document.createElement("div");
+        roleRow.style.marginTop = "6px";
+        const roleLabel = document.createElement("div");
+        roleLabel.className = "card-detail-label";
+        roleLabel.textContent = "주요 채용 특징 (예시)";
+        const roleDesc = document.createElement("div");
+        roleDesc.textContent = poke.role || "등록된 설명이 없습니다.";
+
+        detailBox.appendChild(modeRow);
+        detailBox.appendChild(roleLabel);
+        detailBox.appendChild(roleDesc);
+
+        card.appendChild(cardTop);
+        card.appendChild(nameWrap);
+        card.appendChild(typeList);
+        card.appendChild(detailBox);
+
+        grid.appendChild(card);
+      });
+
+      els.resultsContainer.innerHTML = "";
+      els.resultsContainer.appendChild(grid);
+    }
+
+    // 하단 전체 랭킹 참조표 렌더링
+    function renderReferenceTable() {
+      const list = getCurrentModeList();
+      const selectedSet = new Set(state.selectedRanks);
+      els.referenceTableBody.innerHTML = "";
+
+      list.forEach((poke) => {
+        const tr = document.createElement("tr");
+        const isSelected = selectedSet.has(poke.rank);
+
+        const tdRank = document.createElement("td");
+        tdRank.style.fontWeight = "700";
+        tdRank.textContent = `${poke.rank}위`;
+
+        const tdDex = document.createElement("td");
+        tdDex.style.color = "var(--text-muted)";
+        tdDex.textContent = poke.dex ? `No.${String(poke.dex).padStart(4, "0")}` : "-";
+
+        const tdName = document.createElement("td");
+        tdName.style.fontWeight = "700";
+        tdName.textContent = poke.name;
+
+        const tdTypes = document.createElement("td");
+        (poke.types || []).forEach((t) => {
+          const badge = document.createElement("span");
+          badge.className = `type-badge type-${t}`;
+          badge.style.marginRight = "4px";
+          badge.textContent = t;
+          tdTypes.appendChild(badge);
+        });
+
+        const tdRole = document.createElement("td");
+        tdRole.style.color = "var(--text-secondary)";
+        tdRole.textContent = poke.role || "-";
+
+        const tdAction = document.createElement("td");
+        tdAction.style.textAlign = "center";
+        const actionBtn = document.createElement("button");
+        actionBtn.type = "button";
+        actionBtn.className = isSelected ? "icon-btn delete-btn" : "icon-btn";
+        actionBtn.textContent = isSelected ? "선택 해제" : "+ 담기";
+        actionBtn.addEventListener("click", () => {
+          if (isSelected) {
+            removeRankFromParty(poke.rank);
+          } else {
+            if (state.selectedRanks.length >= MAX_PARTY_SIZE) {
+              showFeedback("error", `최대 ${MAX_PARTY_SIZE}마리까지만 선택할 수 있습니다.`, [
+                "다른 포켓몬을 추가하려면 검색 결과에서 기존 포켓몬을 먼저 삭제해 주세요."
+              ]);
+              return;
+            }
+            state.selectedRanks.push(poke.rank);
+            state.expandedCards.add(poke.rank);
+            state.focusedRank = poke.rank;
+            renderAll();
+            showFeedback("success", `${poke.rank}위 ${poke.name} 포켓몬을 결과에 추가했습니다.`, []);
+          }
+        });
+        tdAction.appendChild(actionBtn);
+
+        tr.appendChild(tdRank);
+        tr.appendChild(tdDex);
+        tr.appendChild(tdName);
+        tr.appendChild(tdTypes);
+        tr.appendChild(tdRole);
+        tr.appendChild(tdAction);
+
+        els.referenceTableBody.appendChild(tr);
+      });
+    }
+
+    // JSON 편집기 동기화
+    function syncJsonEditor() {
+      els.jsonEditor.value = JSON.stringify(state.rankingData, null, 2);
+    }
+
+    // 전체 화면 갱신
+    function renderAll() {
+      renderHeaderMeta();
+      renderResults();
+      renderReferenceTable();
+    }
+
+    // 이벤트 바인딩
+    function bindEvents() {
+      // 배틀 모드 전환 버튼
+      els.btnModeSingle.addEventListener("click", () => switchBattleMode("single"));
+      els.btnModeDouble.addEventListener("click", () => switchBattleMode("double"));
+
+      // 검색 폼 제출 (새로 검색)
+      els.searchForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        executeSearch(false);
+      });
+
+      // 기존 결과에 추가 버튼
+      els.btnAppend.addEventListener("click", () => {
+        executeSearch(true);
+      });
+
+      // 초기화 버튼
+      els.btnReset.addEventListener("click", resetAll);
+
+      // 상세정보 일괄 접기/펼치기 버튼
+      els.btnToggleAllDetails.addEventListener("click", () => {
+        const allExpanded = state.selectedRanks.every((r) => state.expandedCards.has(r));
+        if (allExpanded) {
+          state.expandedCards.clear();
+        } else {
+          state.selectedRanks.forEach((r) => state.expandedCards.add(r));
+        }
+        renderResults();
+      });
+
+      // 빠른 테스트 프리셋 버튼
+      els.presetBtns.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const preset = btn.getAttribute("data-preset") || "";
+          els.rankInput.value = preset;
+          executeSearch(false);
+        });
+      });
+
+      // 커스텀 JSON 데이터 적용
+      els.btnApplyJson.addEventListener("click", () => {
+        try {
+          const parsed = JSON.parse(els.jsonEditor.value);
+          if (!validateDatasetStructure(parsed)) {
+            showFeedback("error", "데이터 구조가 올바르지 않습니다.", [
+              "single 및 double 배열이 각각 존재해야 하며, 각 항목은 rank(숫자), name(문자열), types(배열) 속성을 포함해야 합니다."
+            ]);
+            return;
+          }
+          state.rankingData = parsed;
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+          state.selectedRanks = [];
+          state.expandedCards.clear();
+          renderAll();
+          showFeedback("success", "커스텀 랭킹 데이터가 성공적으로 반영되었습니다!", []);
+        } catch (err) {
+          showFeedback("error", "JSON 문법 오류가 발생했습니다.", [err.message]);
+        }
+      });
+
+      // 기본 예시 데이터로 복원
+      els.btnRestoreDefault.addEventListener("click", () => {
+        localStorage.removeItem(STORAGE_KEY);
+        state.rankingData = JSON.parse(JSON.stringify(DEFAULT_RANKING_DATA));
+        state.selectedRanks = [];
+        state.expandedCards.clear();
+        syncJsonEditor();
+        renderAll();
+        showFeedback("success", "기본 예시 데이터(싱글·더블 각 1~30위)로 복원되었습니다.", []);
+      });
+    }
+
+    // 초기 구동
+    syncJsonEditor();
+    renderAll();
+    bindEvents();
+  </script>
+</body>
+</html>
